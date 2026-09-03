@@ -27,8 +27,8 @@ const ChevronRight = () => (
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white rounded-xl shadow-elevated border border-surface-100 px-4 py-3">
-        <p className="text-xs font-medium text-surface-500 mb-1">{label}</p>
+      <div className="bg-white dark:bg-surface-800 rounded-xl shadow-elevated border border-surface-100 dark:border-surface-700 px-4 py-3">
+        <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">{label}</p>
         {payload.map((entry, i) => (
           <p key={i} className="text-sm font-semibold" style={{ color: entry.color }}>
             {entry.name}: {entry.value}
@@ -104,27 +104,27 @@ export default function RestaurantHistory() {
         title="History"
         subtitle="Historical meal preparation data"
         action={
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-surface-200 px-3 py-2 shadow-soft">
+          <div className="flex items-center gap-2 bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 px-3 py-2 shadow-soft">
             <CalendarIcon />
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="text-sm font-medium text-surface-700 bg-transparent border-none outline-none cursor-pointer"
+              className="text-sm font-medium text-surface-700 dark:text-surface-200 bg-transparent border-none outline-none cursor-pointer"
             />
-            <span className="text-surface-300">to</span>
+            <span className="text-surface-300 dark:text-surface-600">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="text-sm font-medium text-surface-700 bg-transparent border-none outline-none cursor-pointer"
+              className="text-sm font-medium text-surface-700 dark:text-surface-200 bg-transparent border-none outline-none cursor-pointer"
             />
           </div>
         }
       />
 
       {error && (
-        <div className="flex items-center gap-3 bg-danger-50 border border-danger-200 rounded-xl px-4 py-3 text-sm text-danger-700 animate-fade-in">
+        <div className="flex items-center gap-3 bg-danger-50 dark:bg-red-900/20 border border-danger-200 dark:border-red-800/30 rounded-xl px-4 py-3 text-sm text-danger-700 dark:text-red-300 animate-fade-in">
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
@@ -135,8 +135,8 @@ export default function RestaurantHistory() {
       {/* Chart */}
       {chartData.length > 0 && (
         <Card className="animate-fade-in-up">
-          <h3 className="text-base font-semibold text-surface-900 mb-1">Confirmed Meals Over Time</h3>
-          <p className="text-xs text-surface-400 mb-4">Daily confirmed meal count</p>
+          <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-1">Confirmed Meals Over Time</h3>
+          <p className="text-xs text-surface-400 dark:text-surface-500 mb-4">Daily confirmed meal count</p>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
               <defs>
@@ -145,7 +145,7 @@ export default function RestaurantHistory() {
                   <stop offset="100%" stopColor="#5c7cfa" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-surface-700" vertical={false} />
               <XAxis
                 dataKey="date"
                 axisLine={false}
@@ -178,7 +178,7 @@ export default function RestaurantHistory() {
       {records.length === 0 && !loading ? (
         <EmptyState
           icon={
-            <svg className="w-8 h-8 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="w-8 h-8 text-surface-400 dark:text-surface-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
@@ -201,14 +201,14 @@ export default function RestaurantHistory() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   {/* Date */}
                   <div className="sm:w-40 shrink-0">
-                    <p className="text-sm font-semibold text-surface-900">
+                    <p className="text-sm font-semibold text-surface-900 dark:text-surface-100">
                       {new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric',
                       })}
                     </p>
-                    <p className="text-xs text-surface-400">
+                    <p className="text-xs text-surface-400 dark:text-surface-500">
                       {new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', {
                         year: 'numeric',
                       })}
@@ -218,8 +218,8 @@ export default function RestaurantHistory() {
                   {/* Large confirmed count */}
                   <div className="flex items-center gap-3 sm:ml-auto">
                     <div className="text-right">
-                      <p className="text-xs text-surface-500 mb-0.5">Meals to prepare</p>
-                      <p className="text-2xl font-bold text-success-600 tabular-nums">{record.confirmed}</p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mb-0.5">Meals to prepare</p>
+                      <p className="text-2xl font-bold text-success-600 dark:text-emerald-400 tabular-nums">{record.confirmed}</p>
                     </div>
                   </div>
 
@@ -227,19 +227,19 @@ export default function RestaurantHistory() {
                   <div className="flex items-center gap-4 sm:gap-6 sm:w-72">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-success-500" />
-                      <span className="text-xs text-surface-600">
+                      <span className="text-xs text-surface-600 dark:text-surface-300">
                         <span className="font-semibold">{record.confirmed}</span> confirmed
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-danger-400" />
-                      <span className="text-xs text-surface-600">
+                      <span className="text-xs text-surface-600 dark:text-surface-300">
                         <span className="font-semibold">{record.declined}</span> not taking
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-warning-400" />
-                      <span className="text-xs text-surface-600">
+                      <span className="text-xs text-surface-600 dark:text-surface-300">
                         <span className="font-semibold">{record.pending}</span> no response
                       </span>
                     </div>
@@ -247,11 +247,11 @@ export default function RestaurantHistory() {
 
                   {/* Confirmation rate */}
                   <div className="hidden lg:block w-24 shrink-0">
-                    <div className="flex items-center justify-between text-[11px] text-surface-500 mb-1">
+                    <div className="flex items-center justify-between text-[11px] text-surface-500 dark:text-surface-400 mb-1">
                       <span>Confirmed</span>
                       <span className="font-medium">{confirmedPct}%</span>
                     </div>
-                    <div className="w-full bg-surface-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-surface-100 dark:bg-surface-700 rounded-full h-1.5 overflow-hidden">
                       <div
                         className="h-full bg-success-500 rounded-full transition-all duration-500"
                         style={{ width: `${confirmedPct}%` }}
@@ -268,11 +268,11 @@ export default function RestaurantHistory() {
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-surface-500">
-            Page <span className="font-medium text-surface-700">{pagination.page}</span> of{' '}
-            <span className="font-medium text-surface-700">{pagination.totalPages}</span>
+          <p className="text-sm text-surface-500 dark:text-surface-400">
+            Page <span className="font-medium text-surface-700 dark:text-surface-200">{pagination.page}</span> of{' '}
+            <span className="font-medium text-surface-700 dark:text-surface-200">{pagination.totalPages}</span>
             {pagination.total > 0 && (
-              <span className="text-surface-400"> &middot; {pagination.total} records</span>
+              <span className="text-surface-400 dark:text-surface-500"> &middot; {pagination.total} records</span>
             )}
           </p>
           <div className="flex items-center gap-2">

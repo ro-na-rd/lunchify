@@ -1,6 +1,10 @@
+import LunchifyLogo from '../components/LunchifyLogo';
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ThemeSwitcher from '../components/ThemeSwitcher';
+import DatePicker from '../components/DatePicker';
+import { DatePickerProvider } from '../context/DatePickerContext';
 
 const navItems = [
   { path: '/restaurant', label: 'Dashboard', exact: true },
@@ -18,113 +22,71 @@ const bottomNavItems = [
   { path: '/restaurant/settings', label: 'More' },
 ];
 
-function IconHome({ active }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#16a34a' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
+function MobileIcon({ name, active }) {
+  const color = active ? '#2563eb' : '#94a3b8';
+  const icons = {
+    home: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+    lunch: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+        <line x1="7" y1="2" x2="7" y2="22" />
+        <path d="M17 2c-2 0-5 1-5 5 0 3 2 5 5 5v10" />
+        <line x1="17" y1="2" x2="17" y2="22" />
+      </svg>
+    ),
+    planning: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+    ),
+    reports: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+    more: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
+      </svg>
+    ),
+  };
+  return icons[name] || null;
 }
 
-function IconUtensils({ active }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#16a34a' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-      <line x1="7" y1="2" x2="7" y2="22" />
-      <path d="M17 2c-2 0-5 1-5 5 0 3 2 5 5 5v10" />
-      <line x1="17" y1="2" x2="17" y2="22" />
-    </svg>
-  );
-}
-
-function IconCalendar({ active }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#16a34a' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function IconBarChart({ active }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#16a34a' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="20" x2="12" y2="10" />
-      <line x1="18" y1="20" x2="18" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="16" />
-    </svg>
-  );
-}
-
-function IconCog({ active }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#16a34a' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-function IconLogout() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
-function IconMenu() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-  );
-}
-
-function IconClose() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function IconLeaf() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-4.78 10-10 10Z" />
-      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-    </svg>
-  );
-}
-
-const iconMap = {
-  '/restaurant': IconHome,
-  '/restaurant/lunch': IconUtensils,
-  '/restaurant/planning': IconCalendar,
-  '/restaurant/reports': IconBarChart,
-  '/restaurant/settings': IconCog,
+const mobileIconMap = {
+  '/restaurant': 'home',
+  '/restaurant/lunch': 'lunch',
+  '/restaurant/planning': 'planning',
+  '/restaurant/reports': 'reports',
+  '/restaurant/settings': 'more',
 };
 
-function getIcon(path, active) {
-  const Icon = iconMap[path];
-  return Icon ? <Icon active={active} /> : null;
+export default function RestaurantLayout() {
+  return (
+    <DatePickerProvider>
+      <RestaurantLayoutInner />
+    </DatePickerProvider>
+  );
 }
 
-export default function RestaurantLayout() {
+function RestaurantLayoutInner() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (path, exact) => {
     if (exact) return location.pathname === path;
@@ -137,129 +99,169 @@ export default function RestaurantLayout() {
   };
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMobileMenuOpen(false);
-      }
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
     };
-    if (mobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
-    };
-  }, [mobileMenuOpen]);
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
+    setSidebarOpen(false);
   }, [location.pathname]);
 
-  return (
-    <div className="min-h-screen bg-surface-50">
-      <nav ref={menuRef} className="bg-success-600 text-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Link to="/restaurant" className="flex items-center gap-2 text-xl font-bold tracking-tight hover:opacity-90 transition-opacity">
-                <IconLeaf />
-                <span>Lunchify <span className="text-success-100 font-semibold">Restaurant</span></span>
-              </Link>
-            </div>
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
-            <div className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => (
+  return (
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-900">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full bg-white dark:bg-surface-800 border-r border-surface-200 dark:border-surface-700 transition-all duration-300 ease-out-expo flex flex-col
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${collapsed ? 'w-[72px]' : 'w-[260px]'}
+        `}
+      >
+        {/* Logo */}
+        <div className={`flex items-center h-16 px-5 border-b border-surface-100 dark:border-surface-700/50 shrink-0 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <LunchifyLogo size={36} className="shrink-0" />
+          {!collapsed && (
+            <div>
+              <span className="text-base font-bold text-surface-900 dark:text-surface-100 tracking-tight">Lunchify</span>
+              <span className="block text-[10px] text-surface-400 dark:text-surface-500 font-medium tracking-wider uppercase -mt-0.5">Restaurant</span>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          <div className="space-y-1">
+            {navItems.map((item) => {
+              const active = isActive(item.path, item.exact);
+              return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(item.path, item.exact)
-                      ? 'bg-success-700 text-white shadow-sm'
-                      : 'text-success-100 hover:bg-success-500 hover:text-white'
-                  }`}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                    ${active
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                      : 'text-surface-500 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700/50 hover:text-surface-700 dark:hover:text-surface-200'
+                    }
+                    ${collapsed ? 'justify-center px-2' : ''}
+                  `}
                 >
-                  {getIcon(item.path, isActive(item.path, item.exact))}
-                  {item.label}
+                  <MobileIcon name={mobileIconMap[item.path]} active={active} />
+                  {!collapsed && <span>{item.label}</span>}
                 </Link>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+        </nav>
 
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-success-700 border-2 border-success-400 flex items-center justify-center text-sm font-bold">
-                  {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <span className="text-sm font-medium text-success-100">{user?.name}</span>
+        {/* User Section */}
+        <div className="border-t border-surface-100 dark:border-surface-700/50 p-3 shrink-0">
+          <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-50 dark:bg-surface-700/50 ${collapsed ? 'justify-center px-2' : ''}`}>
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-sm shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase()}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{user?.name}</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500 truncate">{user?.email}</p>
               </div>
+            )}
+          </div>
+          <button
+            onClick={handleLogout}
+            title={collapsed ? 'Logout' : undefined}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 mt-1 rounded-xl text-sm font-medium text-surface-500 dark:text-surface-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className={`transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'}`}>
+        {/* Top Bar */}
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl border-b border-surface-100 dark:border-surface-700/50">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+            <div className="flex items-center gap-3">
               <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-success-700 hover:bg-success-800 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-success-300 focus:ring-offset-2 focus:ring-offset-success-600"
-                aria-label="Logout"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 -ml-2 rounded-xl text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               >
-                <IconLogout />
-                <span className="hidden lg:inline">Logout</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className="hidden lg:flex p-2 -ml-2 rounded-xl text-surface-400 dark:text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {collapsed ? (
+                    <>
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <line x1="3" y1="12" x2="15" y2="12" />
+                      <line x1="3" y1="18" x2="21" y2="18" />
+                    </>
+                  ) : (
+                    <>
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <line x1="9" y1="12" x2="21" y2="12" />
+                      <line x1="3" y1="18" x2="21" y2="18" />
+                    </>
+                  )}
+                </svg>
               </button>
             </div>
 
-            <div className="md:hidden flex items-center gap-2">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg hover:bg-success-500 transition-colors focus:outline-none focus:ring-2 focus:ring-success-300"
-                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={mobileMenuOpen}
-              >
-                {mobileMenuOpen ? <IconClose /> : <IconMenu />}
-              </button>
+            <div className="flex items-center gap-2">
+              <DatePicker />
+              <ThemeSwitcher />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">Restaurant</span>
+              </div>
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 font-bold text-sm lg:hidden">
+                {user?.name?.charAt(0)?.toUpperCase()}
+              </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            mobileMenuOpen ? 'max-h-[32rem] opacity-100' : 'max-h-0 opacity-0'
-          }`}
-        >
-          <div className="px-4 pb-4 space-y-1 bg-success-700/50">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  isActive(item.path, item.exact)
-                    ? 'bg-success-800 text-white'
-                    : 'text-success-100 hover:bg-success-600'
-                }`}
-              >
-                {getIcon(item.path, isActive(item.path, item.exact))}
-                {item.label}
-              </Link>
-            ))}
-            <div className="border-t border-success-500 pt-3 mt-3">
-              <div className="flex items-center gap-3 px-4 py-2">
-                <div className="w-8 h-8 rounded-full bg-success-700 border-2 border-success-400 flex items-center justify-center text-sm font-bold">
-                  {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <span className="text-sm text-success-100">{user?.name}</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-success-200 hover:bg-success-600 transition-colors mt-1"
-              >
-                <IconLogout />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+        {/* Page Content */}
+        <main className="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8">
+          <Outlet />
+        </main>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
-        <Outlet />
-      </main>
-
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-surface-200 shadow-lg z-50 safe-area-bottom" role="navigation" aria-label="Mobile navigation">
-        <div className="flex justify-around items-center h-16">
+      {/* Mobile Bottom Nav */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-800 border-t border-surface-200 dark:border-surface-700 z-40 safe-area-bottom" role="navigation" aria-label="Mobile navigation">
+        <div className="flex justify-around items-center h-16 px-2">
           {bottomNavItems.map((item) => {
             const active = isActive(item.path, item.exact);
             return (
@@ -267,17 +269,17 @@ export default function RestaurantLayout() {
                 key={item.path}
                 to={item.path}
                 className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-colors duration-200 ${
-                  active ? 'text-success-600' : 'text-surface-400'
+                  active ? 'text-blue-600 dark:text-blue-400' : 'text-surface-400 dark:text-surface-500'
                 }`}
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
               >
                 <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                  active ? 'bg-success-50 scale-110' : ''
+                  active ? 'bg-blue-50 dark:bg-blue-900/20 scale-110' : ''
                 }`}>
-                  {getIcon(item.path, active)}
+                  <MobileIcon name={mobileIconMap[item.path]} active={active} />
                 </div>
-                <span className={`text-[10px] font-medium leading-none ${active ? 'text-success-600' : 'text-surface-400'}`}>
+                <span className={`text-[10px] font-medium leading-none ${active ? 'text-blue-600 dark:text-blue-400' : 'text-surface-400 dark:text-surface-500'}`}>
                   {item.label}
                 </span>
               </Link>

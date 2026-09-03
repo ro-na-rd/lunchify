@@ -121,16 +121,16 @@ export default function AdminAttendance() {
       <Card>
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="w-full md:w-56">
-            <label className="block text-sm font-medium text-surface-700 mb-1.5">Date</label>
+            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-surface-300 px-4 py-2.5 text-sm bg-white transition-colors focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+              className="w-full rounded-xl border border-surface-300 dark:border-surface-700 px-4 py-2.5 text-sm bg-white dark:bg-surface-800 dark:text-surface-100 transition-colors focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-surface-700 mb-1.5">Status Filter</label>
+            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1.5">Status Filter</label>
             <div className="flex flex-wrap gap-2">
               {tabs.map((tab) => (
                 <button
@@ -139,7 +139,7 @@ export default function AdminAttendance() {
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                     statusFilter === tab.key
                       ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                      : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+                      : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-600'
                   }`}
                 >
                   {tab.label}
@@ -151,31 +151,31 @@ export default function AdminAttendance() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="flex items-center gap-4 p-4 bg-success-50 rounded-xl border border-success-100">
-            <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center text-success-600">
+          <div className="flex items-center gap-4 p-4 bg-success-50 dark:bg-emerald-900/20 rounded-xl border border-success-100 dark:border-emerald-800/30">
+            <div className="w-12 h-12 rounded-xl bg-success-100 dark:bg-emerald-900/30 flex items-center justify-center text-success-600 dark:text-emerald-400">
               <CheckIcon />
             </div>
             <div>
-              <p className="text-2xl font-bold text-success-700">{summary.confirmed}</p>
-              <p className="text-sm text-success-600">Taking Lunch</p>
+              <p className="text-2xl font-bold text-success-700 dark:text-emerald-300">{summary.confirmed}</p>
+              <p className="text-sm text-success-600 dark:text-emerald-400">Taking Lunch</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 p-4 bg-danger-50 rounded-xl border border-danger-100">
-            <div className="w-12 h-12 rounded-xl bg-danger-100 flex items-center justify-center text-danger-600">
+          <div className="flex items-center gap-4 p-4 bg-danger-50 dark:bg-red-900/20 rounded-xl border border-danger-100 dark:border-red-800/30">
+            <div className="w-12 h-12 rounded-xl bg-danger-100 dark:bg-red-900/30 flex items-center justify-center text-danger-600 dark:text-red-400">
               <XIcon />
             </div>
             <div>
-              <p className="text-2xl font-bold text-danger-700">{summary.declined}</p>
-              <p className="text-sm text-danger-600">Not Taking Lunch</p>
+              <p className="text-2xl font-bold text-danger-700 dark:text-red-300">{summary.declined}</p>
+              <p className="text-sm text-danger-600 dark:text-red-400">Not Taking Lunch</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 p-4 bg-warning-50 rounded-xl border border-warning-100">
-            <div className="w-12 h-12 rounded-xl bg-warning-100 flex items-center justify-center text-warning-600">
+          <div className="flex items-center gap-4 p-4 bg-warning-50 dark:bg-amber-900/20 rounded-xl border border-warning-100 dark:border-amber-800/30">
+            <div className="w-12 h-12 rounded-xl bg-warning-100 dark:bg-amber-900/30 flex items-center justify-center text-warning-600 dark:text-amber-400">
               <ClockIcon />
             </div>
             <div>
-              <p className="text-2xl font-bold text-warning-700">{summary.pending}</p>
-              <p className="text-sm text-warning-600">No Response</p>
+              <p className="text-2xl font-bold text-warning-700 dark:text-amber-300">{summary.pending}</p>
+              <p className="text-sm text-warning-600 dark:text-amber-400">No Response</p>
             </div>
           </div>
         </div>
@@ -183,18 +183,18 @@ export default function AdminAttendance() {
 
       {/* Records Table */}
       <Card padding="none">
-        <div className="px-6 py-4 border-b border-surface-100">
-          <h3 className="text-base font-semibold text-surface-900">
+        <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700/50">
+          <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">
             Attendance Records
           </h3>
-          <p className="text-sm text-surface-500 mt-0.5">
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
             {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             {' '}&middot;{' '}{records.length} records
           </p>
         </div>
 
         {/* Mobile Cards */}
-        <div className="sm:hidden divide-y divide-surface-50">
+        <div className="sm:hidden divide-y divide-surface-50 dark:divide-surface-700/50">
           {loading ? (
             <div className="p-6 space-y-4">
               {[...Array(3)].map((_, i) => (
@@ -216,10 +216,10 @@ export default function AdminAttendance() {
                 <div className="flex items-start gap-3">
                   <Avatar name={record.name} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-surface-900 truncate">{record.name}</p>
+                    <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{record.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {record.employee_number && (
-                        <p className="text-xs text-surface-400">#{record.employee_number}</p>
+                        <p className="text-xs text-surface-400 dark:text-surface-500">#{record.employee_number}</p>
                       )}
                       {record.department && (
                         <Badge variant="neutral" size="sm">{record.department}</Badge>
@@ -231,7 +231,7 @@ export default function AdminAttendance() {
                   </Badge>
                 </div>
                 {record.confirmed_at && (
-                  <p className="text-xs text-surface-400 mt-2 ml-13">
+                  <p className="text-xs text-surface-400 dark:text-surface-500 mt-2 ml-13">
                     Confirmed at {new Date(record.confirmed_at).toLocaleTimeString()}
                   </p>
                 )}
@@ -244,15 +244,15 @@ export default function AdminAttendance() {
         <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b border-surface-100">
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee #</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Confirmed At</th>
+              <tr className="border-b border-surface-100 dark:border-surface-700/50">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee #</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Confirmed At</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-50">
+            <tbody className="divide-y divide-surface-50 dark:divide-surface-700/50">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
@@ -280,28 +280,28 @@ export default function AdminAttendance() {
                 </tr>
               ) : (
                 records.map((record, idx) => (
-                  <tr key={idx} className="hover:bg-surface-50/50 transition-colors">
+                  <tr key={idx} className="hover:bg-surface-50/50 dark:hover:bg-surface-700/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <Avatar name={record.name} size="sm" />
-                        <span className="text-sm font-medium text-surface-900">{record.name}</span>
+                        <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{record.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-600">
-                      {record.employee_number || <span className="text-surface-300">-</span>}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-600 dark:text-surface-300">
+                      {record.employee_number || <span className="text-surface-300 dark:text-surface-600">-</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500">
-                      {record.department || <span className="text-surface-300">-</span>}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500 dark:text-surface-400">
+                      {record.department || <span className="text-surface-300 dark:text-surface-600">-</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={statusBadge[record.status || 'pending'].variant} dot>
                         {statusBadge[record.status || 'pending'].label}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500 dark:text-surface-400">
                       {record.confirmed_at
                         ? new Date(record.confirmed_at).toLocaleString()
-                        : <span className="text-surface-300">-</span>}
+                        : <span className="text-surface-300 dark:text-surface-600">-</span>}
                     </td>
                   </tr>
                 ))
@@ -312,8 +312,8 @@ export default function AdminAttendance() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-surface-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-sm text-surface-500">
+          <div className="px-6 py-4 border-t border-surface-100 dark:border-surface-700/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-surface-500 dark:text-surface-400">
               Page {pagination.page} of {pagination.totalPages}
             </p>
             <div className="flex items-center gap-1">

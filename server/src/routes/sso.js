@@ -2,6 +2,7 @@ import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -16,7 +17,7 @@ const isGoogleConfigured = () => {
 router.get('/status', (req, res) => {
   res.json({
     googleConfigured: isGoogleConfigured(),
-    domain: process.env.ALLOWED_EMAIL_DOMAIN || 'azul.rw',
+    domain: process.env.ALLOWED_EMAIL_DOMAIN || 'azultech.rw',
     demoMode: !isGoogleConfigured(),
   });
 });
@@ -28,7 +29,7 @@ router.get('/google', (req, res) => {
 
   passport.authenticate('google', {
     scope: ['profile', 'email'],
-    hd: process.env.ALLOWED_EMAIL_DOMAIN || 'azul.rw',
+    hd: process.env.ALLOWED_EMAIL_DOMAIN || 'azultech.rw',
     prompt: 'select_account',
   })(req, res, (err) => {
     if (err) {
@@ -50,6 +51,15 @@ router.get('/google/callback',
   },
   (req, res) => {
     const user = req.user;
+
+    if (!user) {
+      return res.redirect(`${FRONTEND_URL}/login?error=not_registered`);
+    }
+
+    if (!user.role) {
+      return res.redirect(`${FRONTEND_URL}/login?error=not_registered`);
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -69,47 +79,27 @@ router.get('/google/callback',
   }
 );
 
-router.get('/me', (req, res) => {
-  if (req.isAuthenticated && req.isAuthenticated()) {
-    const user = req.user;
-    return res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      organizationId: user.organization_id,
-      restaurantId: user.restaurant_id,
-      avatar: user.avatar,
-      employee_number: user.employee_number,
-      department: user.department,
-    });
-  }
+// Current session profile. Accepts a Keycloak SSO token or a legacy/demo token
+// (via the shared `authenticate` middleware), then returns the full Lunchify
+// user record — role, organization, restaurant, department.
+router.get('/me', authenticate, (req, res) => {
+  const user =
+    db.find('users', (u) => u.id === req.user.id) ||
+    db.find('users', (u) => u.email?.toLowerCase() === req.user.email?.toLowerCase());
 
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const user = db.find('users', u => u.id === decoded.id);
-      if (user) {
-        return res.json({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organizationId: user.organization_id,
-          restaurantId: user.restaurant_id,
-          avatar: user.avatar,
-          employee_number: user.employee_number,
-          department: user.department,
-        });
-      }
-    } catch (err) {
-      // Token invalid
-    }
-  }
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
 
-  return res.status(401).json({ error: 'Not authenticated' });
+  return res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    organizationId: user.organization_id,
+    restaurantId: user.restaurant_id,
+    avatar: user.avatar || null,
+    employee_number: user.employee_number || null,
+    department: user.department || null,
+  });
 });
 
 router.get('/logout', (req, res) => {
@@ -154,9 +144,9 @@ router.get('/demo-token', (req, res) => {
 
 function getRedirectPath(role) {
   switch (role) {
-    case 'admin': return '/admin';
-    case 'restaurant_owner': return '/restaurant';
-    case 'employee':
+    case 'SUPER_ADMIN': return '/admin';
+    case 'RESTAURANT_MANAGER': return '/restaurant';
+    case 'EMPLOYEE':
     default: return '/employee';
   }
 }

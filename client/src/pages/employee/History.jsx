@@ -5,7 +5,7 @@ import { Card, Badge, Button, Skeleton, PageHeader, EmptyState } from '../../com
 
 const STATUS_CONFIG = {
   confirmed: { label: 'Confirmed', variant: 'success', color: 'bg-success-500' },
-  declined: { label: 'Declined', variant: 'neutral', color: 'bg-surface-400' },
+  declined: { label: 'Declined', variant: 'neutral', color: 'bg-surface-400 dark:bg-surface-500' },
   pending: { label: 'No Response', variant: 'warning', color: 'bg-warning-500' },
 };
 
@@ -34,7 +34,7 @@ const CheckIcon = () => (
 );
 
 const DashIcon = () => (
-  <svg className="w-5 h-5 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg className="w-5 h-5 text-surface-400 dark:text-surface-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
   </svg>
 );
@@ -67,7 +67,7 @@ function HistorySkeleton() {
 
       <Card className="!p-0 overflow-hidden">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className={`flex items-center gap-4 p-4 ${i < 5 ? 'border-b border-surface-100' : ''}`}>
+          <div key={i} className={`flex items-center gap-4 p-4 ${i < 5 ? 'border-b border-surface-100 dark:border-surface-700/50' : ''}`}>
             <Skeleton variant="rectangular" width={72} height={14} className="shrink-0" />
             <div className="flex-1 flex items-center gap-2">
               <Skeleton variant="circular" width={10} height={10} className="shrink-0" />
@@ -130,7 +130,7 @@ export default function EmployeeHistory() {
       {records.length === 0 ? (
         <EmptyState
           icon={
-            <svg className="w-8 h-8 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="w-8 h-8 text-surface-400 dark:text-surface-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
           }
@@ -141,7 +141,7 @@ export default function EmployeeHistory() {
         <div className="space-y-6">
           {Object.entries(groupedRecords).map(([monthYear, monthRecords]) => (
             <div key={monthYear} className="animate-fade-in-up">
-              <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-3 px-1">
+              <h3 className="text-sm font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-3 px-1">
                 {monthYear}
               </h3>
               <Card className="!p-0 overflow-hidden">
@@ -152,12 +152,12 @@ export default function EmployeeHistory() {
                       key={record.date}
                       className={`
                         flex items-center gap-4 px-5 py-3.5
-                        transition-colors hover:bg-surface-50
-                        ${idx < monthRecords.length - 1 ? 'border-b border-surface-100' : ''}
+                        transition-colors hover:bg-surface-50 dark:hover:bg-surface-700/50
+                        ${idx < monthRecords.length - 1 ? 'border-b border-surface-100 dark:border-surface-700/50' : ''}
                       `}
                     >
                       {/* Date */}
-                      <span className="text-sm font-medium text-surface-900 w-24 shrink-0">
+                      <span className="text-sm font-medium text-surface-900 dark:text-surface-100 w-24 shrink-0">
                         {formatDateLabel(record.date)}
                       </span>
 
@@ -187,10 +187,10 @@ export default function EmployeeHistory() {
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <p className="text-sm text-surface-500">
-            Showing <span className="font-medium text-surface-700">{showingFrom}</span> to{' '}
-            <span className="font-medium text-surface-700">{showingTo}</span> of{' '}
-            <span className="font-medium text-surface-700">{pagination.total}</span>
+          <p className="text-sm text-surface-500 dark:text-surface-400">
+            Showing <span className="font-medium text-surface-700 dark:text-surface-200">{showingFrom}</span> to{' '}
+            <span className="font-medium text-surface-700 dark:text-surface-200">{showingTo}</span> of{' '}
+            <span className="font-medium text-surface-700 dark:text-surface-200">{pagination.total}</span>
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -202,7 +202,7 @@ export default function EmployeeHistory() {
             >
               Prev
             </Button>
-            <span className="text-sm text-surface-500 tabular-nums">
+            <span className="text-sm text-surface-500 dark:text-surface-400 tabular-nums">
               {pagination.page} / {pagination.totalPages}
             </span>
             <Button

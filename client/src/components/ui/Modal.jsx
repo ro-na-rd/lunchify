@@ -64,7 +64,7 @@ export default function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -72,7 +72,7 @@ export default function Modal({
     >
       <div
         ref={contentRef}
-        className={`bg-white rounded-2xl shadow-modal w-full animate-scale-in max-h-[90vh] overflow-y-auto ${sizeClasses[size] || sizeClasses.md}`}
+        className={`bg-white rounded-t-2xl sm:rounded-2xl shadow-modal w-full animate-slide-up sm:animate-scale-in max-h-[90vh] overflow-y-auto ${sizeClasses[size] || sizeClasses.md}`}
       >
         {title && (
           <div className="flex justify-between items-center p-6 border-b border-surface-100">

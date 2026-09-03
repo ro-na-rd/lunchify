@@ -6,7 +6,7 @@ export { default as Input } from './Input';
 export { default as Select } from './Select';
 export { default as Modal } from './Modal';
 export { default as Skeleton } from './Skeleton';
-export { default as Toast } from './Toast';
+export { ToastProvider, useToast } from './Toast';
 export { default as EmptyState } from './EmptyState';
 export { default as ErrorState } from './ErrorState';
 export { default as PageHeader } from './PageHeader';

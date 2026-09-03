@@ -6,56 +6,166 @@ import { authenticate, authorize, verifyOrganizationAccess } from '../middleware
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('admin'));
+router.use(authorize('SUPER_ADMIN'));
 router.use(verifyOrganizationAccess);
 
 router.get('/dashboard', (req, res) => {
   const orgId = req.targetOrganizationId;
   const today = new Date().toISOString().split('T')[0];
+  const targetDate = req.query.date || today;
 
-  const totalEmployees = db.count('users', u => u.organization_id === orgId && u.role === 'employee');
+  const totalEmployees = db.count('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
   const confirmedToday = db.count('lunch_attendance', a => {
     const user = db.find('users', u => u.id === a.user_id);
-    return user && user.organization_id === orgId && a.date === today && a.status === 'confirmed';
+    return user && user.organization_id === orgId && a.date === targetDate && a.status === 'confirmed';
   });
   const declinedToday = db.count('lunch_attendance', a => {
     const user = db.find('users', u => u.id === a.user_id);
-    return user && user.organization_id === orgId && a.date === today && a.status === 'declined';
+    return user && user.organization_id === orgId && a.date === targetDate && a.status === 'declined';
   });
-  const noResponse = totalEmployees - confirmedToday - declinedToday;
+  const noResponse = Math.max(0, totalEmployees - confirmedToday - declinedToday);
   const org = db.find('organizations', o => o.id === orgId);
 
-  res.json({ totalEmployees, confirmedToday, declinedToday, noResponse, cutoff: { hour: org.lunch_cutoff_hour, minute: org.lunch_cutoff_minute } });
+  res.json({ totalEmployees, confirmedToday, declinedToday, noResponse, date: targetDate, cutoff: { hour: org?.lunch_cutoff_hour ?? 10, minute: org?.lunch_cutoff_minute ?? 30 } });
 });
 
+router.get('/dashboard/weekly', (req, res) => {
+  const orgId = req.targetOrganizationId;
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
+  const empIds = new Set(employees.map(e => e.id));
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+
+  const weeklyData = days.map(date => {
+    const dayRecords = db.filter('lunch_attendance', a => empIds.has(a.user_id) && a.date === date);
+    const confirmed = dayRecords.filter(a => a.status === 'confirmed').length;
+    const declined = dayRecords.filter(a => a.status === 'declined').length;
+    const pending = Math.max(0, employees.length - confirmed - declined);
+    const dayLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+    return { day: dayLabel, confirmed, declined, pending };
+  });
+
+  res.json({ weeklyData, totalEmployees: employees.length });
+});
+
+router.get('/dashboard/reminders', (req, res) => {
+  const orgId = req.targetOrganizationId;
+  const today = new Date().toISOString().split('T')[0];
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
+
+  const noResponseEmps = employees.filter(emp => {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === today);
+    return !att;
+  });
+
+  res.json({
+    count: noResponseEmps.length,
+    employees: noResponseEmps.map(e => ({ id: e.id, name: e.name, email: e.email })),
+  });
+});
+
+router.post('/dashboard/reminders', (req, res) => {
+  const orgId = req.targetOrganizationId;
+  const today = new Date().toISOString().split('T')[0];
+  const { employeeIds } = req.body;
+
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
+  let targets = employees;
+
+  if (employeeIds && employeeIds.length > 0) {
+    targets = employees.filter(e => employeeIds.includes(e.id));
+  }
+
+  const noResponseEmps = targets.filter(emp => {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === today);
+    return !att;
+  });
+
+  noResponseEmps.forEach(emp => {
+    db.auditLog(req.user.id, 'reminder_sent', 'user', emp.id, { date: today });
+  });
+
+  res.json({ sent: noResponseEmps.length, message: `Reminder sent to ${noResponseEmps.length} employee(s)` });
+});
+
+const ROLES = ['EMPLOYEE', 'RESTAURANT_MANAGER', 'SUPER_ADMIN'];
+
+// Roster of everyone in the organization (all roles), for team + access management.
 router.get('/employees', (req, res) => {
   const orgId = req.targetOrganizationId;
-  const { search, department, page = 1, limit = 20 } = req.query;
+  const { search, department, role, page = 1, limit = 20 } = req.query;
 
-  let employees = db.filter('users', u => u.organization_id === orgId && u.role === 'employee');
+  let members = db.filter('users', u => u.organization_id === orgId);
 
   if (search) {
     const s = search.toLowerCase();
-    employees = employees.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.employee_number && u.employee_number.toLowerCase().includes(s)));
+    members = members.filter(u => u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.employee_number && u.employee_number.toLowerCase().includes(s)));
   }
   if (department) {
-    employees = employees.filter(u => u.department === department);
+    members = members.filter(u => u.department === department);
+  }
+  if (role) {
+    members = members.filter(u => u.role === role);
   }
 
-  employees.sort((a, b) => a.name.localeCompare(b.name));
-  const total = employees.length;
+  members.sort((a, b) => a.name.localeCompare(b.name));
+  const total = members.length;
   const offset = (page - 1) * limit;
-  const paged = employees.slice(offset, offset + Number(limit));
+  const paged = members.slice(offset, offset + Number(limit));
 
   res.json({
-    employees: paged.map(e => ({ id: e.id, email: e.email, name: e.name, employee_number: e.employee_number, department: e.department, created_at: e.created_at })),
+    employees: paged.map(e => ({
+      id: e.id, email: e.email, name: e.name, role: e.role,
+      employee_number: e.employee_number, department: e.department,
+      restaurant_id: e.restaurant_id, created_at: e.created_at,
+    })),
     pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / limit) },
   });
 });
 
+// Change a member's role. SUPER_ADMIN only (route is already gated).
+router.put('/employees/:employeeId/role', (req, res) => {
+  const orgId = req.targetOrganizationId;
+  const { role } = req.body;
+
+  if (!ROLES.includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  const target = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId);
+  if (!target) return res.status(404).json({ error: 'Member not found' });
+
+  if (target.id === req.user.id) {
+    return res.status(400).json({ error: "You can't change your own role" });
+  }
+
+  if (target.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+    const admins = db.count('users', u => u.organization_id === orgId && u.role === 'SUPER_ADMIN');
+    if (admins <= 1) return res.status(400).json({ error: 'There must be at least one admin' });
+  }
+
+  const updates = { role };
+  if (role === 'RESTAURANT_MANAGER') {
+    const link = db.find('restaurant_organizations', ro => ro.organization_id === orgId);
+    updates.restaurant_id = target.restaurant_id || link?.restaurant_id || null;
+  } else {
+    updates.restaurant_id = null;
+  }
+
+  db.update('users', u => u.id === target.id, updates);
+  db.auditLog(req.user.id, 'role_changed', 'user', target.id, { email: target.email, from: target.role, to: role });
+
+  res.json({ id: target.id, name: target.name, email: target.email, role, restaurant_id: updates.restaurant_id });
+});
+
 router.get('/employees/:employeeId', (req, res) => {
   const orgId = req.targetOrganizationId;
-  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId && u.role === 'employee');
+  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId && u.role === 'EMPLOYEE');
   if (!emp) return res.status(404).json({ error: 'Employee not found' });
   res.json({ id: emp.id, email: emp.email, name: emp.name, employee_number: emp.employee_number, department: emp.department, created_at: emp.created_at });
 });
@@ -66,7 +176,7 @@ router.post('/employees', (req, res) => {
   if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
   if (db.find('users', u => u.email === email)) return res.status(409).json({ error: 'Email already exists' });
 
-  const emp = { id: uuidv4(), email, name, role: 'employee', organization_id: orgId, restaurant_id: null, employee_number: employee_number || null, department: department || null, created_at: new Date().toISOString() };
+  const emp = { id: uuidv4(), email, name, role: 'EMPLOYEE', organization_id: orgId, restaurant_id: null, employee_number: employee_number || null, department: department || null, created_at: new Date().toISOString() };
   db.insert('users', emp);
   db.auditLog(req.user.id, 'employee_created', 'user', emp.id, { name, email, department });
   res.status(201).json({ id: emp.id, name, email, employee_number, department });
@@ -74,8 +184,8 @@ router.post('/employees', (req, res) => {
 
 router.put('/employees/:employeeId', (req, res) => {
   const orgId = req.targetOrganizationId;
-  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId && u.role === 'employee');
-  if (!emp) return res.status(404).json({ error: 'Employee not found' });
+  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId);
+  if (!emp) return res.status(404).json({ error: 'Member not found' });
 
   const { name, email, employee_number, department } = req.body;
   if (email && email !== emp.email) {
@@ -92,8 +202,16 @@ router.put('/employees/:employeeId', (req, res) => {
 
 router.delete('/employees/:employeeId', (req, res) => {
   const orgId = req.targetOrganizationId;
-  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId && u.role === 'employee');
-  if (!emp) return res.status(404).json({ error: 'Employee not found' });
+  const emp = db.find('users', u => u.id === req.params.employeeId && u.organization_id === orgId);
+  if (!emp) return res.status(404).json({ error: 'Member not found' });
+
+  if (emp.id === req.user.id) {
+    return res.status(400).json({ error: "You can't remove your own account" });
+  }
+  if (emp.role === 'SUPER_ADMIN') {
+    const admins = db.count('users', u => u.organization_id === orgId && u.role === 'SUPER_ADMIN');
+    if (admins <= 1) return res.status(400).json({ error: 'There must be at least one admin' });
+  }
 
   db.remove('lunch_attendance', a => a.user_id === emp.id);
   db.remove('users', u => u.id === emp.id);
@@ -104,7 +222,7 @@ router.delete('/employees/:employeeId', (req, res) => {
 router.get('/departments', (req, res) => {
   const orgId = req.targetOrganizationId;
   const departments = [...new Set(
-    db.filter('users', u => u.organization_id === orgId && u.role === 'employee' && u.department).map(u => u.department)
+    db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE' && u.department).map(u => u.department)
   )].sort();
   res.json(departments);
 });
@@ -114,7 +232,7 @@ router.get('/attendance', (req, res) => {
   const { date, status, page = 1, limit = 20 } = req.query;
   const targetDate = date || new Date().toISOString().split('T')[0];
 
-  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'employee');
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
   let records = employees.map(emp => {
     const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === targetDate);
     return { user_id: emp.id, name: emp.name, employee_number: emp.employee_number, department: emp.department, status: att?.status || null, confirmed_at: att?.confirmed_at || null };
@@ -138,7 +256,7 @@ router.get('/attendance/history', (req, res) => {
   const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const end = endDate || new Date().toISOString().split('T')[0];
 
-  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'employee');
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
   const empMap = new Map(employees.map(e => [e.id, e]));
   const records = db.filter('lunch_attendance', a => {
     const emp = empMap.get(a.user_id);
@@ -159,7 +277,7 @@ router.get('/reports/attendance', (req, res) => {
   const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const end = endDate || new Date().toISOString().split('T')[0];
 
-  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'employee');
+  const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
   const empMap = new Map(employees.map(e => [e.id, e]));
   let records = db.filter('lunch_attendance', a => {
     const emp = empMap.get(a.user_id);
@@ -205,6 +323,35 @@ router.put('/settings', (req, res) => {
 router.get('/settings', (req, res) => {
   const org = db.find('organizations', o => o.id === req.targetOrganizationId);
   res.json(org);
+});
+
+router.get('/restaurants', (req, res) => {
+  const orgId = req.targetOrganizationId;
+  const links = db.filter('restaurant_organizations', ro => ro.organization_id === orgId);
+  const restaurants = links.map(link => {
+    const rest = db.find('restaurants', r => r.id === link.restaurant_id);
+    if (!rest) return null;
+    return { id: rest.id, name: rest.name, pin: rest.pin };
+  }).filter(Boolean);
+  res.json(restaurants);
+});
+
+router.put('/restaurants/:restaurantId/pin', (req, res) => {
+  const { restaurantId } = req.params;
+  const { pin } = req.body;
+
+  if (!pin || pin.length < 4) {
+    return res.status(400).json({ error: 'PIN must be at least 4 digits' });
+  }
+
+  const restaurant = db.find('restaurants', r => r.id === restaurantId);
+  if (!restaurant) {
+    return res.status(404).json({ error: 'Restaurant not found' });
+  }
+
+  restaurant.pin = pin;
+  db.auditLog(req.user.id, 'restaurant_pin_updated', 'restaurant', restaurantId, { pin });
+  res.json({ id: restaurant.id, name: restaurant.name, pin: restaurant.pin });
 });
 
 router.get('/audit-logs', (req, res) => {

@@ -123,12 +123,12 @@ export default function AdminReports() {
       {/* Report Parameters */}
       <Card>
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-blue-900/20 flex items-center justify-center text-brand-600 dark:text-blue-400">
             <ChartIcon />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-surface-900">Report Parameters</h3>
-            <p className="text-sm text-surface-500">Configure date range and department filter</p>
+            <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">Report Parameters</h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Configure date range and department filter</p>
           </div>
         </div>
 
@@ -172,38 +172,38 @@ export default function AdminReports() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in-up">
             <Card>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-blue-900/20 flex items-center justify-center text-brand-600 dark:text-blue-400">
                   <FileIcon />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-surface-900">{summary.total}</p>
-                  <p className="text-sm text-surface-500">Total Records</p>
+                  <p className="text-2xl font-bold text-surface-900 dark:text-surface-100">{summary.total}</p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">Total Records</p>
                 </div>
               </div>
             </Card>
             <Card>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center text-success-600">
+                <div className="w-10 h-10 rounded-xl bg-success-50 dark:bg-emerald-900/20 flex items-center justify-center text-success-600 dark:text-emerald-400">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-success-700">{summary.confirmed}</p>
-                  <p className="text-sm text-surface-500">Confirmed</p>
+                  <p className="text-2xl font-bold text-success-700 dark:text-emerald-300">{summary.confirmed}</p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">Confirmed</p>
                 </div>
               </div>
             </Card>
             <Card>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center text-danger-600">
+                <div className="w-10 h-10 rounded-xl bg-danger-50 dark:bg-red-900/20 flex items-center justify-center text-danger-600 dark:text-red-400">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-danger-700">{summary.declined}</p>
-                  <p className="text-sm text-surface-500">Declined</p>
+                  <p className="text-2xl font-bold text-danger-700 dark:text-red-300">{summary.declined}</p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">Declined</p>
                 </div>
               </div>
             </Card>
@@ -211,11 +211,11 @@ export default function AdminReports() {
 
           {/* Results Table */}
           <Card padding="none" className="animate-fade-in-up">
-            <div className="px-6 py-4 border-b border-surface-100">
+            <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700/50">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-semibold text-surface-900">Attendance Report</h3>
-                  <p className="text-sm text-surface-500">
+                  <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">Attendance Report</h3>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
                     {startDate} to {endDate} &middot; {records.length} records
                   </p>
                 </div>
@@ -234,7 +234,7 @@ export default function AdminReports() {
             </div>
 
             {/* Mobile Cards */}
-            <div className="sm:hidden divide-y divide-surface-50">
+            <div className="sm:hidden divide-y divide-surface-50 dark:divide-surface-700/50">
               {records.length === 0 ? (
                 <EmptyState
                   icon={<FileIcon />}
@@ -246,12 +246,12 @@ export default function AdminReports() {
                   <div key={idx} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-surface-900 truncate">{record.name}</p>
+                        <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{record.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {record.employee_number && <p className="text-xs text-surface-400">#{record.employee_number}</p>}
+                          {record.employee_number && <p className="text-xs text-surface-400 dark:text-surface-500">#{record.employee_number}</p>}
                           {record.department && <Badge variant="neutral" size="sm">{record.department}</Badge>}
                         </div>
-                        <p className="text-xs text-surface-400 mt-1">
+                        <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
                           {new Date(record.date + 'T00:00:00').toLocaleDateString()}
                         </p>
                       </div>
@@ -260,7 +260,7 @@ export default function AdminReports() {
                       </Badge>
                     </div>
                     {record.confirmed_at && (
-                      <p className="text-xs text-surface-400 mt-2">
+                      <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
                         Confirmed at {new Date(record.confirmed_at).toLocaleTimeString()}
                       </p>
                     )}
@@ -273,16 +273,16 @@ export default function AdminReports() {
             <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full">
                 <thead>
-                  <tr className="border-b border-surface-100">
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee</th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee #</th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Department</th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Confirmed At</th>
+                  <tr className="border-b border-surface-100 dark:border-surface-700/50">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee #</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Department</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Confirmed At</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-50">
+                <tbody className="divide-y divide-surface-50 dark:divide-surface-700/50">
                   {records.length === 0 ? (
                     <tr>
                       <td colSpan={6}>
@@ -295,15 +295,15 @@ export default function AdminReports() {
                     </tr>
                   ) : (
                     records.map((record, idx) => (
-                      <tr key={idx} className="hover:bg-surface-50/50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-surface-900">{record.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-600">
-                          {record.employee_number || <span className="text-surface-300">-</span>}
+                      <tr key={idx} className="hover:bg-surface-50/50 dark:hover:bg-surface-700/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-surface-900 dark:text-surface-100">{record.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-600 dark:text-surface-300">
+                          {record.employee_number || <span className="text-surface-300 dark:text-surface-600">-</span>}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500">
-                          {record.department || <span className="text-surface-300">-</span>}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500 dark:text-surface-400">
+                          {record.department || <span className="text-surface-300 dark:text-surface-600">-</span>}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-700 dark:text-surface-200">
                           {new Date(record.date + 'T00:00:00').toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -311,10 +311,10 @@ export default function AdminReports() {
                             {statusBadge[record.status]?.label || record.status}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500 dark:text-surface-400">
                           {record.confirmed_at
                             ? new Date(record.confirmed_at).toLocaleString()
-                            : <span className="text-surface-300">-</span>}
+                            : <span className="text-surface-300 dark:text-surface-600">-</span>}
                         </td>
                       </tr>
                     ))

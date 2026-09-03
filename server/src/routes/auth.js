@@ -35,7 +35,7 @@ router.post('/login', (req, res) => {
 
 router.get('/users', (req, res) => {
   const users = db.filter('users').sort((a, b) => {
-    const roleOrder = { admin: 0, restaurant_owner: 1, employee: 2 };
+    const roleOrder = { SUPER_ADMIN: 0, RESTAURANT_MANAGER: 1, EMPLOYEE: 2 };
     return (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3) || a.name.localeCompare(b.name);
   });
 
@@ -44,6 +44,29 @@ router.get('/users', (req, res) => {
     organization_id: u.organization_id, restaurant_id: u.restaurant_id,
     employee_number: u.employee_number, department: u.department,
   })));
+});
+
+router.post('/restaurant-pin', (req, res) => {
+  const { pin } = req.body;
+
+  if (!pin) {
+    return res.status(400).json({ error: 'PIN is required' });
+  }
+
+  const restaurant = db.find('restaurants', r => r.pin === pin);
+
+  if (!restaurant) {
+    return res.status(401).json({ error: 'Invalid PIN' });
+  }
+
+  db.auditLog(null, 'restaurant_pin_login', 'restaurant', restaurant.id, { pin });
+
+  res.json({
+    restaurant: {
+      id: restaurant.id,
+      name: restaurant.name,
+    },
+  });
 });
 
 export default router;

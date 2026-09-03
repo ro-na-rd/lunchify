@@ -2,9 +2,26 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import db from './db.js';
 
-const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'azul.rw';
+const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || 'azultech.rw';
+
+function googleConfigured() {
+  const id = process.env.GOOGLE_CLIENT_ID || '';
+  const secret = process.env.GOOGLE_CLIENT_SECRET || '';
+  return id.length > 10 && secret.length > 10 && !id.includes('YOUR_GOOGLE') && !secret.includes('YOUR_GOOGLE');
+}
 
 function configurePassport() {
+  // Legacy Google SSO — only wired up if real credentials are present.
+  // The live path is Keycloak (see middleware/keycloakAuth.js).
+  if (!googleConfigured()) {
+    passport.serializeUser((user, done) => done(null, user.id));
+    passport.deserializeUser((id, done) => {
+      const user = db.find('users', (u) => u.id === id);
+      done(user ? null : new Error('User not found'), user || null);
+    });
+    return;
+  }
+
   passport.use(new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
@@ -38,7 +55,7 @@ function configurePassport() {
             id: profile.id,
             email,
             name: name || email.split('@')[0],
-            role: 'employee',
+            role: 'EMPLOYEE',
             organization_id: orgId || null,
             restaurant_id: null,
             employee_number: null,

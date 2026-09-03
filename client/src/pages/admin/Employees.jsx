@@ -38,6 +38,33 @@ function getDeptBadge(dept) {
   return <Badge variant={deptColors[idx]}>{dept}</Badge>;
 }
 
+const ROLE_OPTIONS = [
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'RESTAURANT_MANAGER', label: 'Restaurant Manager' },
+  { value: 'SUPER_ADMIN', label: 'Admin' },
+];
+
+const roleBadgeVariant = {
+  EMPLOYEE: 'brand',
+  RESTAURANT_MANAGER: 'success',
+  SUPER_ADMIN: 'warning',
+};
+
+function RoleSelect({ value, disabled, onChange }) {
+  return (
+    <select
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 dark:text-surface-100 px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {ROLE_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
 function LoadingSkeleton() {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -76,10 +103,10 @@ function EmployeeCard({ emp, onEdit, onDelete }) {
       <div className="flex items-start gap-3">
         <Avatar name={emp.name} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-surface-900 truncate">{emp.name}</p>
-          <p className="text-xs text-surface-500 truncate">{emp.email}</p>
+          <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{emp.name}</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400 truncate">{emp.email}</p>
           {emp.employee_number && (
-            <p className="text-xs text-surface-400 mt-1">#{emp.employee_number}</p>
+            <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">#{emp.employee_number}</p>
           )}
         </div>
         {getDeptBadge(emp.department)}
@@ -88,7 +115,7 @@ function EmployeeCard({ emp, onEdit, onDelete }) {
         <Button variant="ghost" size="sm" icon={<EditIcon />} onClick={() => onEdit(emp)}>
           Edit
         </Button>
-        <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => onDelete(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50">
+        <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => onDelete(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20">
           Delete
         </Button>
       </div>
@@ -97,7 +124,7 @@ function EmployeeCard({ emp, onEdit, onDelete }) {
 }
 
 export default function AdminEmployees() {
-  const { apiFetch } = useAuth();
+  const { apiFetch, user } = useAuth();
   const { showToast } = useToast();
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -171,6 +198,25 @@ export default function AdminEmployees() {
     setFormError('');
   };
 
+  const handleRoleChange = async (emp, role) => {
+    const prev = employees;
+    setEmployees((list) => list.map((e) => (e.id === emp.id ? { ...e, role } : e)));
+    try {
+      await apiFetch(`/api/admin/employees/${emp.id}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      });
+      showToast({
+        type: 'success',
+        title: 'Role updated',
+        message: `${emp.name} is now ${ROLE_OPTIONS.find((o) => o.value === role)?.label}.`,
+      });
+    } catch (err) {
+      setEmployees(prev);
+      showToast({ type: 'error', title: 'Could not change role', message: err.message });
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await apiFetch(`/api/admin/employees/${id}`, { method: 'DELETE' });
@@ -197,11 +243,11 @@ export default function AdminEmployees() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Employees"
-        subtitle={`${pagination.total} total employees`}
+        title="Team"
+        subtitle={`${pagination.total} member${pagination.total === 1 ? '' : 's'} · manage roles and details`}
         action={
           <Button variant="primary" icon={<PlusIcon />} onClick={openAddForm}>
-            Add Employee
+            Add Member
           </Button>
         }
       />
@@ -215,7 +261,7 @@ export default function AdminEmployees() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-danger-50 border border-danger-200 rounded-xl text-sm text-danger-700">
+            <div className="p-3 bg-danger-50 dark:bg-red-900/20 border border-danger-200 dark:border-red-800 rounded-xl text-sm text-danger-700 dark:text-red-300">
               {formError}
             </div>
           )}
@@ -241,13 +287,13 @@ export default function AdminEmployees() {
             onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
           />
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-surface-700">Department</label>
+            <label className="block text-sm font-medium text-surface-700 dark:text-surface-200">Department</label>
             <input
               type="text"
               placeholder="e.g. Engineering"
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full rounded-xl border border-surface-300 px-4 py-2.5 text-sm bg-white transition-colors placeholder:text-surface-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+              className="w-full rounded-xl border border-surface-300 dark:border-surface-700 px-4 py-2.5 text-sm bg-white dark:bg-surface-800 dark:text-surface-100 transition-colors placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
               list="departments-list"
             />
             <datalist id="departments-list">
@@ -272,7 +318,7 @@ export default function AdminEmployees() {
         title="Delete Employee"
         size="sm"
       >
-        <p className="text-sm text-surface-600 mb-6">
+        <p className="text-sm text-surface-600 dark:text-surface-300 mb-6">
           Are you sure you want to delete this employee? This action cannot be undone.
         </p>
         <div className="flex gap-3">
@@ -288,7 +334,7 @@ export default function AdminEmployees() {
       {/* Table / List */}
       <Card padding="none">
         {/* Search & Filters */}
-        <div className="px-6 py-4 border-b border-surface-100">
+        <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700/50">
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               placeholder="Search by name, email, or number..."
@@ -307,7 +353,7 @@ export default function AdminEmployees() {
         </div>
 
         {/* Mobile Cards */}
-        <div className="sm:hidden divide-y divide-surface-100">
+        <div className="sm:hidden divide-y divide-surface-100 dark:divide-surface-700/50">
           {loading ? (
             <div className="p-6 space-y-4">
               {[...Array(3)].map((_, i) => (
@@ -329,19 +375,29 @@ export default function AdminEmployees() {
                 <div className="flex items-start gap-3">
                   <Avatar name={emp.name} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-surface-900 truncate">{emp.name}</p>
-                    <p className="text-xs text-surface-500 truncate">{emp.email}</p>
+                    <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{emp.name}</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 truncate">{emp.email}</p>
                     {emp.employee_number && (
-                      <p className="text-xs text-surface-400 mt-0.5">#{emp.employee_number}</p>
+                      <p className="text-xs text-surface-400 dark:text-surface-500 mt-0.5">#{emp.employee_number}</p>
                     )}
                   </div>
                   {getDeptBadge(emp.department)}
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-xs text-surface-400 dark:text-surface-500">Role</span>
+                  {emp.id === user?.id ? (
+                    <Badge variant={roleBadgeVariant[emp.role] || 'neutral'} dot>
+                      {ROLE_OPTIONS.find((o) => o.value === emp.role)?.label || emp.role} (you)
+                    </Badge>
+                  ) : (
+                    <RoleSelect value={emp.role} onChange={(role) => handleRoleChange(emp, role)} />
+                  )}
                 </div>
                 <div className="flex gap-2 mt-3">
                   <Button variant="ghost" size="sm" icon={<EditIcon />} onClick={() => handleEdit(emp)}>
                     Edit
                   </Button>
-                  <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => setShowDeleteConfirm(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50">
+                  <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => setShowDeleteConfirm(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20">
                     Delete
                   </Button>
                 </div>
@@ -354,15 +410,15 @@ export default function AdminEmployees() {
         <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b border-surface-100">
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Employee #</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3.5 text-right text-xs font-semibold text-surface-500 uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-surface-100 dark:border-surface-700/50">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Member</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3.5 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3.5 text-right text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-50">
+            <tbody className="divide-y divide-surface-50 dark:divide-surface-700/50">
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
@@ -391,24 +447,39 @@ export default function AdminEmployees() {
                 </tr>
               ) : (
                 employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-surface-50/50 transition-colors">
+                  <tr key={emp.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-700/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <Avatar name={emp.name} size="sm" />
-                        <span className="text-sm font-medium text-surface-900">{emp.name}</span>
+                        <div>
+                          <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{emp.name}</span>
+                          {emp.employee_number && (
+                            <p className="text-xs text-surface-400 dark:text-surface-500">#{emp.employee_number}</p>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-600">
-                      {emp.employee_number || <span className="text-surface-300">-</span>}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {emp.id === user?.id ? (
+                        <Badge variant={roleBadgeVariant[emp.role] || 'neutral'} dot>
+                          {ROLE_OPTIONS.find((o) => o.value === emp.role)?.label || emp.role}
+                          <span className="ml-1 text-[10px] opacity-70">(you)</span>
+                        </Badge>
+                      ) : (
+                        <RoleSelect
+                          value={emp.role}
+                          onChange={(role) => handleRoleChange(emp, role)}
+                        />
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">{getDeptBadge(emp.department)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500">{emp.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-surface-500 dark:text-surface-400">{emp.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" icon={<EditIcon />} onClick={() => handleEdit(emp)}>
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => setShowDeleteConfirm(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50">
+                        <Button variant="ghost" size="sm" icon={<TrashIcon />} onClick={() => setShowDeleteConfirm(emp.id)} className="text-danger-600 hover:text-danger-700 hover:bg-danger-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20">
                           Delete
                         </Button>
                       </div>
@@ -422,8 +493,8 @@ export default function AdminEmployees() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-surface-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-sm text-surface-500">
+          <div className="px-6 py-4 border-t border-surface-100 dark:border-surface-700/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-surface-500 dark:text-surface-400">
               Showing {((pagination.page - 1) * 10) + 1} to {Math.min(pagination.page * 10, pagination.total)} of {pagination.total}
             </p>
             <div className="flex items-center gap-1">

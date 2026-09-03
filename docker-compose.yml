@@ -1,0 +1,28 @@
+# Lunchify — app container (API + built client).
+# Keycloak runs from the `sso` repo; this talks to it over its public URL.
+#
+#   cp .env.docker.example .env.docker   # fill in prod values
+#   docker compose up -d --build
+#
+# Put nginx + TLS in front of port 3001 (see DEPLOYMENT.md).
+
+services:
+  lunchify:
+    build:
+      context: .
+      args:
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8081}
+        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-azul-tech}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-lunchify}
+        VITE_KEYCLOAK_IDP_HINT: ${VITE_KEYCLOAK_IDP_HINT:-zoho}
+    container_name: lunchify
+    restart: unless-stopped
+    env_file: .env.docker
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - lunchify_data:/app/server/data
+
+volumes:
+  lunchify_data:
+    driver: local

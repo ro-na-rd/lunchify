@@ -4,8 +4,53 @@ import { authenticate, authorize, verifyRestaurantAccess } from '../middleware/a
 
 const router = Router();
 
+// Public kitchen view - no auth required
+router.get('/kitchen/:restaurantId', (req, res) => {
+  const { restaurantId } = req.params;
+  const today = new Date().toISOString().split('T')[0];
+
+  const restaurant = db.find('restaurants', r => r.id === restaurantId);
+  if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+
+  const servedOrgIds = db.filter('restaurant_organizations', ro => ro.restaurant_id === restaurantId).map(ro => ro.organization_id);
+  if (servedOrgIds.length === 0) {
+    return res.json({ restaurant: restaurant.name, date: today, confirmed: 0, declined: 0, pending: 0, totalEmployees: 0, employees: [] });
+  }
+
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
+  const empIds = new Set(employees.map(e => e.id));
+
+  const confirmed = employees.filter(emp => {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === today && a.status === 'confirmed');
+    return !!att;
+  }).map(e => ({ name: e.name, department: e.department, employee_number: e.employee_number }));
+
+  const declined = employees.filter(emp => {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === today && a.status === 'declined');
+    return !!att;
+  }).map(e => ({ name: e.name, department: e.department }));
+
+  const pending = employees.filter(emp => {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === today);
+    return !att;
+  }).map(e => ({ name: e.name, department: e.department }));
+
+  res.json({
+    restaurant: restaurant.name,
+    date: today,
+    confirmed: confirmed.length,
+    declined: declined.length,
+    pending: pending.length,
+    totalEmployees: employees.length,
+    confirmedEmployees: confirmed,
+    declinedEmployees: declined,
+    pendingEmployees: pending,
+  });
+});
+
+// Authenticated routes below
 router.use(authenticate);
-router.use(authorize('restaurant_owner'));
+router.use(authorize('RESTAURANT_MANAGER'));
 router.use(verifyRestaurantAccess);
 
 function getServedOrgIds(restaurantId) {
@@ -14,23 +59,57 @@ function getServedOrgIds(restaurantId) {
 
 router.get('/dashboard', (req, res) => {
   const restaurantId = req.targetRestaurantId;
-  const today = new Date().toISOString().split('T')[0];
+  const selectedDate = req.query.date || new Date().toISOString().split('T')[0];
   const restaurant = db.find('restaurants', r => r.id === restaurantId);
   const servedOrgIds = getServedOrgIds(restaurantId);
 
   if (servedOrgIds.length === 0) {
-    return res.json({ restaurant, expectedMeals: 0, confirmedLunches: 0, notTakingLunch: 0, noResponse: 0, totalEmployees: 0 });
+    return res.json({ restaurant, date: selectedDate, expectedMeals: 0, confirmedLunches: 0, notTakingLunch: 0, noResponse: 0, totalEmployees: 0 });
   }
 
-  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'employee');
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
   const totalEmployees = employees.length;
   const empIds = new Set(employees.map(e => e.id));
 
-  const confirmedLunches = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === today && a.status === 'confirmed');
-  const notTakingLunch = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === today && a.status === 'declined');
+  const confirmedLunches = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === selectedDate && a.status === 'confirmed');
+  const notTakingLunch = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === selectedDate && a.status === 'declined');
   const noResponse = totalEmployees - confirmedLunches - notTakingLunch;
 
-  res.json({ restaurant, expectedMeals: confirmedLunches, confirmedLunches, notTakingLunch, noResponse, totalEmployees });
+  res.json({ restaurant, date: selectedDate, expectedMeals: confirmedLunches, confirmedLunches, notTakingLunch, noResponse, totalEmployees });
+});
+
+// Named list of who confirmed / declined / has not responded for a date.
+router.get('/roster', (req, res) => {
+  const restaurantId = req.targetRestaurantId;
+  const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+  const servedOrgIds = getServedOrgIds(restaurantId);
+
+  if (servedOrgIds.length === 0) {
+    return res.json({ date: targetDate, confirmed: [], declined: [], pending: [] });
+  }
+
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
+  const buckets = { confirmed: [], declined: [], pending: [] };
+
+  for (const emp of employees) {
+    const att = db.find('lunch_attendance', a => a.user_id === emp.id && a.date === targetDate);
+    const row = {
+      name: emp.name,
+      department: emp.department || null,
+      employee_number: emp.employee_number || null,
+      confirmed_at: att?.confirmed_at || null,
+    };
+    if (att?.status === 'confirmed') buckets.confirmed.push(row);
+    else if (att?.status === 'declined') buckets.declined.push(row);
+    else buckets.pending.push(row);
+  }
+
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  buckets.confirmed.sort(byName);
+  buckets.declined.sort(byName);
+  buckets.pending.sort(byName);
+
+  res.json({ date: targetDate, ...buckets });
 });
 
 router.get('/meal-requirements', (req, res) => {
@@ -43,7 +122,7 @@ router.get('/meal-requirements', (req, res) => {
 
   const requirements = servedOrgIds.map(orgId => {
     const org = db.find('organizations', o => o.id === orgId);
-    const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'employee');
+    const employees = db.filter('users', u => u.organization_id === orgId && u.role === 'EMPLOYEE');
     const empIds = new Set(employees.map(e => e.id));
     const confirmed = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === targetDate && a.status === 'confirmed');
     const declined = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === targetDate && a.status === 'declined');
@@ -61,7 +140,7 @@ router.get('/trends', (req, res) => {
 
   if (servedOrgIds.length === 0) return res.json({ trends: [] });
 
-  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'employee');
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
   const empIds = new Set(employees.map(e => e.id));
   const attendance = db.filter('lunch_attendance', a => empIds.has(a.user_id));
 
@@ -95,7 +174,7 @@ router.get('/history', (req, res) => {
 
   if (servedOrgIds.length === 0) return res.json({ records: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
 
-  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'employee');
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
   const empIds = new Set(employees.map(e => e.id));
   const attendance = db.filter('lunch_attendance', a => empIds.has(a.user_id) && a.date >= start && a.date <= end);
 
@@ -125,7 +204,7 @@ router.get('/reports/preparation', (req, res) => {
     return res.json({ restaurant: restaurant.name, date: targetDate, totalMealsRequired: 0, confirmedLunches: 0, notTakingLunch: 0, noResponse: 0 });
   }
 
-  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'employee');
+  const employees = db.filter('users', u => servedOrgIds.includes(u.organization_id) && u.role === 'EMPLOYEE');
   const empIds = new Set(employees.map(e => e.id));
   const totalEmployees = employees.length;
   const confirmed = db.count('lunch_attendance', a => empIds.has(a.user_id) && a.date === targetDate && a.status === 'confirmed');

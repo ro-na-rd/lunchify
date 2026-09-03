@@ -1,112 +1,144 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { IDP_HINT } from '../keycloak.js';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+// Demo (email-only) login is a local development convenience. It is disabled
+// in production builds — real users always come through Keycloak/Zoho SSO.
+const DEMO_LOGIN_ENABLED = import.meta.env.DEV;
+
+export function AuthProvider({ keycloak, authenticated, children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [ssoStatus, setSsoStatus] = useState({ googleConfigured: false, demoMode: true });
+  const kcRef = useRef(keycloak);
 
-  useEffect(() => {
-    fetch('/auth/status')
-      .then(res => res.json())
-      .then(setSsoStatus)
-      .catch(() => {});
+  // Always hand back a currently-valid token (Keycloak first, demo token otherwise).
+  const getToken = useCallback(async () => {
+    const kc = kcRef.current;
+    if (kc?.authenticated) {
+      try {
+        await kc.updateToken(30);
+      } catch {
+        await kc.login({ idpHint: IDP_HINT });
+        return null;
+      }
+      return kc.token;
+    }
+    return localStorage.getItem('demo_token');
+  }, []);
+
+  // Resolve the Lunchify profile (role / organization / restaurant) for the
+  // authenticated identity. The server maps the SSO token -> Lunchify user.
+  const loadProfile = useCallback(async (token) => {
+    const res = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Not authorized');
+    return res.json();
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ssoToken = params.get('token');
+    let cancelled = false;
 
-    if (ssoToken) {
-      localStorage.setItem('token', ssoToken);
-      window.history.replaceState({}, '', window.location.pathname);
-
-      fetch('/auth/me', { headers: { Authorization: `Bearer ${ssoToken}` } })
-        .then(res => res.json())
-        .then(data => {
-          if (data.id) {
-            localStorage.setItem('user', JSON.stringify(data));
-            setToken(ssoToken);
-            setUser(data);
+    (async () => {
+      try {
+        if (authenticated && kcRef.current?.token) {
+          const profile = await loadProfile(kcRef.current.token);
+          if (!cancelled) setUser(profile);
+        } else if (DEMO_LOGIN_ENABLED) {
+          const demoToken = localStorage.getItem('demo_token');
+          const demoUser = localStorage.getItem('demo_user');
+          if (demoToken && demoUser) {
+            setUser(JSON.parse(demoUser));
           }
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        })
-        .finally(() => setLoading(false));
-      return;
-    }
+        }
+      } catch (err) {
+        console.error('Session load failed:', err);
+        localStorage.removeItem('demo_token');
+        localStorage.removeItem('demo_user');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    return () => { cancelled = true; };
+  }, [authenticated, loadProfile]);
+
+  // Primary login: Keycloak -> straight to Zoho via idpHint.
+  const login = useCallback(() => {
+    return kcRef.current.login({
+      idpHint: IDP_HINT,
+      redirectUri: window.location.origin + '/',
+    });
   }, []);
 
-  const loginWithGoogle = useCallback(() => {
-    window.location.href = '/auth/google';
-  }, []);
-
-  const login = async (email) => {
+  // Dev-only: email-only demo login against the seeded users.
+  const demoLogin = useCallback(async (email) => {
+    if (!DEMO_LOGIN_ENABLED) throw new Error('Demo login is disabled');
     const res = await fetch(`/auth/demo-token?email=${encodeURIComponent(email)}`);
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error);
-    }
-
+    if (!res.ok) throw new Error((await res.json()).error);
     const data = await res.json();
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setToken(data.token);
+    localStorage.setItem('demo_token', data.token);
+    localStorage.setItem('demo_user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
-  };
-
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    window.location.href = '/login';
   }, []);
 
-  const getHeaders = () => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  });
+  const logout = useCallback(() => {
+    localStorage.removeItem('demo_token');
+    localStorage.removeItem('demo_user');
+    setUser(null);
+    const kc = kcRef.current;
+    if (kc?.authenticated) {
+      kc.logout({ redirectUri: window.location.origin + '/login' });
+    } else {
+      window.location.href = '/login';
+    }
+  }, []);
 
-  const apiFetch = async (url, options = {}) => {
+  const apiFetch = useCallback(async (url, options = {}) => {
+    const token = await getToken();
     const res = await fetch(url, {
       ...options,
-      headers: { ...getHeaders(), ...options.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
     });
 
     if (res.status === 401) {
       logout();
       throw new Error('Session expired');
     }
-
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error);
+      throw new Error((await res.json().catch(() => ({}))).error || `Request failed (${res.status})`);
     }
-
-    if (res.headers.get('content-type')?.includes('text/csv')) {
-      return res.blob();
-    }
-
+    if (res.headers.get('content-type')?.includes('text/csv')) return res.blob();
     return res.json();
-  };
+  }, [getToken, logout]);
+
+  const getHeaders = useCallback(() => {
+    const kc = kcRef.current;
+    const token = kc?.authenticated ? kc.token : localStorage.getItem('demo_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, logout, apiFetch, getHeaders, ssoStatus }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        demoLogin,
+        demoLoginEnabled: DEMO_LOGIN_ENABLED,
+        logout,
+        apiFetch,
+        getHeaders,
+        getToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
