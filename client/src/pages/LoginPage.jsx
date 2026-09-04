@@ -22,21 +22,28 @@ const ClockIcon = () => (
   </svg>
 );
 
+const demoUsers = [
+  { label: 'Admin Dashboard', email: 'admin@acme.com', color: 'from-brand-500 to-brand-700', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+  { label: 'Employee Dashboard', email: 'john@acme.com', color: 'from-emerald-500 to-emerald-700', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+  { label: 'Restaurant Manager', email: 'manager@citycafe.com', color: 'from-amber-500 to-amber-700', icon: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7' },
+];
+
 export default function LoginPage() {
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState('staff');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(null);
 
-  const { login } = useAuth();
+  const { login, demoLogin, demoLoginEnabled } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Azul Tech SSO — redirects to Keycloak, which authenticates against Zoho.
+  // Azul Tech SSO — Keycloak's own login page (Keycloak is the identity provider).
   const handleSSOLogin = async () => {
     try {
       setError('');
@@ -46,6 +53,20 @@ export default function LoginPage() {
       console.error('SSO Login Error:', err);
       setError('Unable to connect to Azul Tech SSO. Please try again later.');
       setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (email, label) => {
+    try {
+      setError('');
+      setDemoLoading(label);
+      const user = await demoLogin(email);
+      if (user?.role === 'SUPER_ADMIN') navigate('/admin');
+      else if (user?.role === 'EMPLOYEE') navigate('/employee');
+      else if (user?.role === 'RESTAURANT_MANAGER') navigate('/restaurant');
+    } catch (err) {
+      setError(err.message || 'Demo login failed');
+      setDemoLoading(null);
     }
   };
 
@@ -141,7 +162,7 @@ export default function LoginPage() {
             >
               {[
                 { icon: <CheckBadge />, text: 'Confirm lunch in one tap' },
-                { icon: <ShieldIcon />, text: 'Sign in with your Zoho work account' },
+                { icon: <ShieldIcon />, text: 'Sign in with your Azul Tech account' },
                 { icon: <ClockIcon />, text: 'Real-time kitchen headcount' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 text-white/50">
@@ -177,11 +198,7 @@ export default function LoginPage() {
 
             {/* Mobile logo */}
             <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-              <LunchifyLogo size={40} />
-              <div>
-                <span className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">Lunchify</span>
-                <span className="block text-[10px] text-surface-400 dark:text-surface-500 font-medium tracking-wider uppercase -mt-0.5">by Azul Tech</span>
-              </div>
+              <LunchifyLogo size={40} /> 
             </div>
 
             {/* Heading */}
@@ -242,8 +259,7 @@ export default function LoginPage() {
                 </button>
 
                 <p className="mt-3 text-center text-xs text-surface-400 dark:text-surface-500">
-                  Use your <span className="font-medium text-surface-500 dark:text-surface-400">@azultech.rw</span> Zoho account.
-                  No separate password to remember.
+                  Sign in with your <span className="font-medium text-surface-500 dark:text-surface-400">@azultech.rw</span> Azul Tech account.
                 </p>
 
                 <div className="mt-8 rounded-xl border border-surface-100 dark:border-surface-700/60 bg-surface-50 dark:bg-surface-800/50 p-4">
@@ -308,6 +324,45 @@ export default function LoginPage() {
                 Secured with Azul Tech single sign-on
               </p>
             </div>
+
+            {/* Demo Quick-Login (dev only) */}
+            {demoLoginEnabled && (
+              <div className="mt-6 p-4 rounded-xl border border-dashed border-amber-300 dark:border-amber-600/50 bg-amber-50/50 dark:bg-amber-900/10">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Quick Demo Login
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {demoUsers.map((u) => (
+                    <button
+                      key={u.email}
+                      onClick={() => handleDemoLogin(u.email, u.label)}
+                      disabled={demoLoading !== null}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150 disabled:opacity-50 ${
+                        demoLoading === u.label
+                          ? 'bg-brand-100 dark:bg-brand-900/30 ring-2 ring-brand-400'
+                          : 'bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700 border border-surface-200 dark:border-surface-700'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${u.color} flex items-center justify-center shadow-sm`}>
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d={u.icon} />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">{u.label}</p>
+                        <p className="text-[11px] text-surface-400 dark:text-surface-500 truncate">{u.email}</p>
+                      </div>
+                      {demoLoading === u.label && (
+                        <div className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

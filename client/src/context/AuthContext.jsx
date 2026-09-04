@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { IDP_HINT } from '../keycloak.js';
 
 const AuthContext = createContext(null);
 
@@ -19,7 +18,7 @@ export function AuthProvider({ keycloak, authenticated, children }) {
       try {
         await kc.updateToken(30);
       } catch {
-        await kc.login({ idpHint: IDP_HINT });
+        await kc.login();
         return null;
       }
       return kc.token;
@@ -62,10 +61,9 @@ export function AuthProvider({ keycloak, authenticated, children }) {
     return () => { cancelled = true; };
   }, [authenticated, loadProfile]);
 
-  // Primary login: Keycloak -> straight to Zoho via idpHint.
+  // Primary login: Keycloak's own login page (Keycloak is the IdP).
   const login = useCallback(() => {
     return kcRef.current.login({
-      idpHint: IDP_HINT,
       redirectUri: window.location.origin + '/',
     });
   }, []);
