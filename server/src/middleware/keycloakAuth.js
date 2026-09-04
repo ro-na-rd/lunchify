@@ -18,7 +18,7 @@ import db from '../db.js';
  * that carries no lunchify client role at all.
  */
 
-const ISSUER = process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azul-tech';
+const ISSUER = process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azultech';
 const JWKS_URI = process.env.KEYCLOAK_JWKS_URI || `${ISSUER}/protocol/openid-connect/certs`;
 const ALLOWED_AZP = (process.env.KEYCLOAK_ALLOWED_AZP || 'lunchify')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -93,7 +93,13 @@ export function resolveLunchifyUser(claims) {
     throw err;
   }
 
-  let user = db.find('users', (u) => u.email?.toLowerCase() === email);
+  // Key off `sub` — the durable, immutable identity Keycloak issues — never
+  // off email or username, which people change. Email lookup remains only as
+  // a one-time fallback to link up records created before keycloak_sub was
+  // captured; the match then backfills keycloak_sub below so every later
+  // lookup goes through sub.
+  let user = claims.sub && db.find('users', (u) => u.keycloak_sub === claims.sub);
+  if (!user) user = db.find('users', (u) => u.email?.toLowerCase() === email);
   const claimRole = roleFromClaims(claims);
 
   if (!user) {

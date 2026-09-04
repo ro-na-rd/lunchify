@@ -68,7 +68,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     sso: 'keycloak',
-    issuer: process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azul-tech',
+    issuer: process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azultech',
     domain: process.env.ALLOWED_EMAIL_DOMAIN || 'azultech.rw',
   });
 });
@@ -90,7 +90,7 @@ app.listen(PORT, () => {
   console.log(`  ====================`);
   console.log(`  Server:    http://localhost:${PORT}`);
   console.log(`  Frontend:  ${FRONTEND_URL}`);
-  console.log(`  SSO:       Keycloak — ${process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azul-tech'}`);
+  console.log(`  SSO:       Keycloak — ${process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/azultech'}`);
   console.log(`  Domain:    @${process.env.ALLOWED_EMAIL_DOMAIN || 'azultech.rw'}`);
   console.log(`  Health:    http://localhost:${PORT}/api/health\n`);
 });

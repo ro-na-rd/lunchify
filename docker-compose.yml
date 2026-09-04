@@ -12,7 +12,7 @@ services:
       context: .
       args:
         VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8081}
-        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-azul-tech}
+        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-azultech}
         VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-lunchify}
         VITE_KEYCLOAK_IDP_HINT: ${VITE_KEYCLOAK_IDP_HINT:-zoho}
     container_name: lunchify

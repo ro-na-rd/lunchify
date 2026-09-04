@@ -64,7 +64,7 @@ Open `http://localhost:5173` → **Continue with Azul Tech SSO**.
 
 | Var | Purpose |
 |---|---|
-| `KEYCLOAK_ISSUER` | e.g. `http://localhost:8081/realms/azul-tech` |
+| `KEYCLOAK_ISSUER` | e.g. `http://localhost:8081/realms/azultech` |
 | `KEYCLOAK_JWKS_URI` | `<issuer>/protocol/openid-connect/certs` |
 | `KEYCLOAK_ALLOWED_AZP` | allowed client id(s), default `lunchify` |
 | `ALLOWED_EMAIL_DOMAIN` | `azultech.rw` |
@@ -77,9 +77,8 @@ Open `http://localhost:5173` → **Continue with Azul Tech SSO**.
 
 ```
 VITE_KEYCLOAK_URL=http://localhost:8081
-VITE_KEYCLOAK_REALM=azul-tech
+VITE_KEYCLOAK_REALM=azultech
 VITE_KEYCLOAK_CLIENT_ID=lunchify
-VITE_KEYCLOAK_IDP_HINT=zoho
 ```
 
 ---

@@ -5,7 +5,7 @@ import Keycloak from "keycloak-js";
 // broker: no idpHint, no redirect to a third party.
 const keycloak = new Keycloak({
   url: import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:8081",
-  realm: import.meta.env.VITE_KEYCLOAK_REALM || "azul-tech",
+  realm: import.meta.env.VITE_KEYCLOAK_REALM || "azultech",
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "lunchify",
 });
 
